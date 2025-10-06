@@ -138,7 +138,7 @@ input[type="file"] { display: none; }
 <div class="modal-header"><h2>Model Configuration</h2><button class="close-btn" onclick="closeSettings()">×</button></div>
 <div class="setting-item"><label>Model Status</label><input type="text" value="NASA Exoplanet ML Model v1.0" disabled style="opacity: 0.7; width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e0e0e0;"></div>
 <div class="setting-item" style="margin-top: 20px;"><label>Dataset</label><input type="text" value="NASA Exoplanet Archive" disabled style="opacity: 0.7; width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e0e0e0;"></div>
-<div class="setting-item" style="margin-top: 20px;"><label>API Endpoint</label><input type="text" id="apiEndpoint" value="http://127.0.0.1:5001/api/predict" placeholder="API endpoint URL" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e0e0e0;"></div>
+<div class="setting-item" style="margin-top: 20px;"><label>API Endpoint</label><input type="text" id="apiEndpoint" value="https://web-production-2d6aa.up.railway.app/api/predict" placeholder="API endpoint URL" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e0e0e0;"></div>
 <button class="btn" onclick="closeSettings()" style="margin-top: 20px;">Close</button>
 </div>
 </div>
@@ -150,7 +150,7 @@ input[type="file"] { display: none; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-const ML_MODEL_API = 'web-production-2d6aa.up.railway.app';
+const ML_MODEL_API = 'https://web-production-2d6aa.up.railway.app/api/predict';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCNev9ImmiExML048xan-nY9atb6rIcghE",
