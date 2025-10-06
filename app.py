@@ -175,9 +175,10 @@ def home():
     })
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5001))
     print("\n🚀 ExoML Backend Server Starting...")
     print("📊 Model files loaded from:", os.path.abspath('model_files'))
-    print("🌐 Server running on: http://127.0.0.1:5001")
+    print(f"🌐 Server running on port: {port}")
     print("\nReady to receive predictions!\n")
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False)
 
