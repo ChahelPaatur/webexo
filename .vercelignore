@@ -10,4 +10,12 @@ venv/
 .gitignore
 *.log
 .DS_Store
+app.py
+api/
+model_files/
+requirements.txt
+Procfile
+runtime.txt
+test_api.py
+*.sh
 

@@ -1,6 +1,6 @@
 # 🚀 Quick Start Guide
 
-## Local Development (Easy Way)
+## Local Development (Start Here!)
 
 ### 1. Install Dependencies
 ```bash
@@ -13,7 +13,6 @@
 ```
 
 ### 3. Open Frontend
-Open `index.html` in your browser or run:
 ```bash
 open index.html
 ```
@@ -27,118 +26,167 @@ python test_api.py
 
 ---
 
-## Manual Setup
+## 🌐 Deploy to Production
 
-### Install
+### The Problem
+TensorFlow models are **too large** for Vercel serverless functions (250MB limit).
+
+### The Solution
+Split deployment:
+- **Frontend** → Vercel (static hosting)
+- **Backend** → Railway (ML-friendly, free tier)
+
+### Quick Deploy (3 Steps)
+
+#### Step 1: Push to GitHub
 ```bash
-pip install -r requirements.txt
+git init
+git add .
+git commit -m "Initial commit"
+gh repo create webexo --public --source=. --push
 ```
 
-### Run
+#### Step 2: Deploy Backend to Railway
+1. Go to [railway.app](https://railway.app)
+2. Sign in with GitHub
+3. Click **"New Project"** → **"Deploy from GitHub"**
+4. Select `webexo` repository
+5. Copy your app URL: `https://webexo-production-xxxx.up.railway.app`
+
+#### Step 3: Deploy Frontend to Vercel
 ```bash
-python app.py
-```
-
-The API will be available at `http://127.0.0.1:5001`
-
----
-
-## Deploy to Vercel
-
-### One-Command Deploy
-```bash
-npm i -g vercel
 vercel
 ```
 
-Follow the prompts:
-- Project name: webexo (or your choice)
-- Directory: ./
-- Framework: Other
-- Build command: (leave empty)
-- Output directory: (leave empty)
-
-That's it! Your API will be live at `https://your-project.vercel.app/api/predict`
-
-### Update Frontend
-After deploying, the frontend will automatically use the Vercel endpoint when not on localhost.
+Then update the frontend settings with your Railway URL!
 
 ---
 
-## Usage
+## 📊 Full Deployment Guide
 
-1. **Sign Up/Login**: Use Firebase authentication
-2. **Upload CSV**: Click "Upload CSV" and select your exoplanet data
-3. **View Results**: See predictions, confidence scores, and orbital metrics
-4. **AI Assistant**: Ask questions about the predictions
+See **[DEPLOY.md](DEPLOY.md)** for detailed instructions including:
+- Railway deployment (recommended)
+- Render deployment (alternative)
+- Heroku deployment
+- CORS configuration
+- Environment variables
 
 ---
 
-## API Testing
-
-### Local Test
-```bash
-curl -X POST http://127.0.0.1:5001/api/predict \
-  -H "Content-Type: application/json" \
-  -d '{"data": "FLUX.1,FLUX.2\n0.98,0.97\n"}'
-```
+## 🧪 Test the API
 
 ### Health Check
 ```bash
 curl http://127.0.0.1:5001/health
 ```
 
+### Test Prediction
+```bash
+python test_api.py
+```
+
+### Manual cURL Test
+```bash
+curl -X POST http://127.0.0.1:5001/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"data": "FLUX.1,FLUX.2\n0.98,0.97\n"}'
+```
+
 ---
 
-## Troubleshooting
+## 🎯 Architecture
+
+```
+User Browser
+    ↓
+Frontend (Vercel)
+    ↓ API call
+Backend (Railway) 
+    ↓
+TensorFlow Model
+    ↓
+Prediction Response
+```
+
+---
+
+## 💡 Why This Setup?
+
+### Vercel (Frontend)
+✅ Free forever  
+✅ Global CDN  
+✅ Auto SSL  
+✅ GitHub integration  
+❌ Can't run TensorFlow (too large)
+
+### Railway (Backend)
+✅ Free 500 hours/month  
+✅ ML-friendly (512MB RAM)  
+✅ Auto-deploys from GitHub  
+✅ Great for TensorFlow  
+✅ Simple setup
+
+**Total Cost: $0/month** 🎉
+
+---
+
+## 🐛 Common Issues
 
 ### Port Already in Use
 ```bash
 lsof -ti:5001 | xargs kill -9
+./start.sh
 ```
 
 ### Model Not Loading
-Ensure these files exist:
-- `model_files/exoplanet_bilstm.h5`
-- `model_files/scaler.pkl`
-- `model_files/metadata.pkl`
+Check that these files exist:
+```
+model_files/
+├── exoplanet_bilstm.h5
+├── scaler.pkl
+└── metadata.pkl
+```
 
-### CORS Issues
-- Frontend and backend must be running
-- Check browser console for errors
-- CORS is enabled in Flask with `Flask-Cors`
+### CORS Errors in Production
+Make sure `Flask-Cors` is installed:
+```bash
+pip install Flask-Cors
+```
 
-### Vercel Deployment Issues
-- Increase memory: Set in `vercel.json` (currently 3GB)
-- Check logs: `vercel logs`
-- TensorFlow size: Using optimized version for serverless
+### Backend URL Not Working
+In the frontend settings, make sure you enter the **full URL**:
+```
+https://your-app.up.railway.app/api/predict
+```
 
 ---
 
-## File Structure
+## 📁 Project Structure
 
 ```
 webexo/
-├── index.html           # Frontend UI
-├── app.py              # Local Flask server
-├── api/predict.py      # Vercel serverless function
-├── model_files/        # ML model files
-├── requirements.txt    # Python packages
-├── vercel.json        # Vercel config
-├── setup.sh           # Setup script
-├── start.sh           # Start script
-└── test_api.py        # API test script
+├── index.html          # Frontend (deploy to Vercel)
+├── app.py             # Backend (deploy to Railway)
+├── model_files/       # ML model files
+├── requirements.txt   # Python dependencies
+├── Procfile          # Railway/Heroku config
+├── runtime.txt       # Python version
+├── vercel.json       # Vercel config (static only)
+└── DEPLOY.md         # Full deployment guide
 ```
 
 ---
 
-## Next Steps
+## ✅ Next Steps
 
-1. ✅ Start local server: `./start.sh`
-2. ✅ Test API: `python test_api.py`
-3. ✅ Open `index.html` in browser
-4. ✅ Upload sample data: `sample_data.csv`
-5. 🚀 Deploy to Vercel: `vercel`
+1. **Local first**: Get it working on your machine
+   ```bash
+   ./start.sh
+   open index.html
+   ```
 
-**You're all set! Happy exoplanet hunting! 🌌**
+2. **Upload test data**: Use `sample_data.csv`
 
+3. **Deploy when ready**: Follow [DEPLOY.md](DEPLOY.md)
+
+**Happy exoplanet hunting! 🌌🪐**
