@@ -251,8 +251,8 @@ async function handleFileUpload(event){
   const reader=new FileReader();
   reader.onload=async function(e){
     const csvData=e.target.result;
+    const apiUrl = document.getElementById('apiEndpoint').value || ML_MODEL_API;
     try{
-      const apiUrl = document.getElementById('apiEndpoint').value || ML_MODEL_API;
       const response=await fetch(apiUrl,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -260,7 +260,8 @@ async function handleFileUpload(event){
       });
       
       if(!response.ok){
-        throw new Error('ML Model API is not responding. Please check your endpoint.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.message || 'ML Model API error');
       }
       
       const prediction=await response.json();
@@ -278,7 +279,7 @@ async function handleFileUpload(event){
       
       addToHistory('Analysis: '+file.name,new Date().toLocaleString());
     }catch(error){
-      container.innerHTML='<div class="data-card"><h3 style="color: #ff6b6b;">❌ Error</h3><p style="color: #888; margin-top: 12px;">'+error.message+'</p><p style="color: #666; margin-top: 8px; font-size: 14px;">Make sure your ML model API is running at: '+apiUrl+'</p><p style="color: #888; margin-top: 8px; font-size: 14px;">To start the server, run: <code style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;">./start.sh</code></p></div>';
+      container.innerHTML='<div class="data-card"><h3 style="color: #ff6b6b;">❌ Error</h3><p style="color: #888; margin-top: 12px;">'+error.message+'</p><p style="color: #666; margin-top: 8px; font-size: 14px;">Make sure your ML model API is running at: '+apiUrl+'</p><p style="color: #888; margin-top: 8px; font-size: 14px;">Check the format of your CSV file or try the sample data.</p></div>';
     }
   };
   reader.readAsText(file);

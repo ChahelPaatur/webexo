@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Railway Keep-Alive</title>
+</head>
+<body>
+<h1>Railway Keep-Alive Service</h1>
+<p>Status: <span id="status">Starting...</span></p>
+<p>Last ping: <span id="lastPing">-</span></p>
+<p>Next ping in: <span id="countdown">-</span> seconds</p>
+
+<script>
+const RAILWAY_URL = 'https://web-production-2d6aa.up.railway.app/health';
+const PING_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+let nextPing = Date.now();
+
+async function pingServer() {
+  try {
+    document.getElementById('status').textContent = 'Pinging...';
+    const response = await fetch(RAILWAY_URL);
+    const data = await response.json();
+    
+    document.getElementById('status').textContent = '✅ Alive';
+    document.getElementById('lastPing').textContent = new Date().toLocaleTimeString();
+    console.log('Ping successful:', data);
+  } catch (error) {
+    document.getElementById('status').textContent = '❌ Failed';
+    console.error('Ping failed:', error);
+  }
+  
+  nextPing = Date.now() + PING_INTERVAL;
+}
+
+// Update countdown every second
+setInterval(() => {
+  const remaining = Math.floor((nextPing - Date.now()) / 1000);
+  document.getElementById('countdown').textContent = remaining > 0 ? remaining : 0;
+}, 1000);
+
+// Ping immediately on load
+pingServer();
+
+// Then ping every 5 minutes
+setInterval(pingServer, PING_INTERVAL);
+</script>
+</body>
+</html>
+

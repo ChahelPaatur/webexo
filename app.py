@@ -50,38 +50,44 @@ def preprocess_csv(csv_data):
         from io import StringIO
         df = pd.read_csv(StringIO(csv_data))
         
-        # Remove any non-numeric columns
+        # Remove any non-numeric columns (like LABEL if present)
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         df = df[numeric_cols]
         
         # Handle missing values
         df = df.fillna(df.mean())
         
-        # Get expected features from metadata if available
-        if metadata and 'feature_names' in metadata:
-            expected_features = metadata['feature_names']
-            # Ensure we have the right columns
-            missing_cols = set(expected_features) - set(df.columns)
-            if missing_cols:
-                for col in missing_cols:
-                    df[col] = 0
-            df = df[expected_features]
+        # Get the input shape from metadata
+        if metadata and 'input_shape' in metadata:
+            expected_timesteps = metadata['input_shape'][0]  # Should be 39
+            expected_features = metadata['input_shape'][1]   # Should be 1
+        else:
+            expected_timesteps = 39
+            expected_features = 1
+        
+        # Convert dataframe to array
+        data = df.values
+        
+        # Flatten all data into a single sequence
+        data_flat = data.flatten()
+        
+        # If we don't have enough data, pad with zeros
+        if len(data_flat) < expected_timesteps:
+            data_flat = np.pad(data_flat, (0, expected_timesteps - len(data_flat)), 'constant')
+        
+        # If we have too much data, take the first N timesteps
+        if len(data_flat) > expected_timesteps:
+            data_flat = data_flat[:expected_timesteps]
+        
+        # Reshape to (timesteps, 1) for scaling
+        X = data_flat.reshape(-1, 1)
         
         # Scale the data
         if scaler:
-            X = scaler.transform(df)
-        else:
-            X = df.values
+            X = scaler.transform(X)
         
-        # Reshape for LSTM (samples, timesteps, features)
-        # If single row, treat each feature as a timestep
-        if len(X.shape) == 2:
-            if X.shape[0] == 1:
-                # Single sample: reshape to (1, timesteps, features)
-                X = X.reshape(1, X.shape[1], 1)
-            else:
-                # Multiple samples: reshape to (samples, timesteps, 1)
-                X = X.reshape(X.shape[0], X.shape[1], 1)
+        # Reshape for LSTM: (1 sample, timesteps, features)
+        X = X.reshape(1, expected_timesteps, expected_features)
         
         return X
     except Exception as e:
