@@ -48,14 +48,24 @@ def preprocess_csv(csv_data):
     """Convert CSV string to preprocessed numpy array for model"""
     try:
         from io import StringIO
-        df = pd.read_csv(StringIO(csv_data))
+        
+        # Try to read CSV with error handling for malformed data
+        try:
+            df = pd.read_csv(StringIO(csv_data), error_bad_lines=False, warn_bad_lines=False)
+        except:
+            # If that fails, try with on_bad_lines parameter (pandas >= 1.3)
+            df = pd.read_csv(StringIO(csv_data), on_bad_lines='skip')
         
         # Remove any non-numeric columns (like LABEL if present)
         numeric_cols = df.select_dtypes(include=[np.number]).columns
+        
+        if len(numeric_cols) == 0:
+            raise ValueError("No numeric columns found in CSV. Please ensure your file contains numerical flux data.")
+        
         df = df[numeric_cols]
         
         # Handle missing values
-        df = df.fillna(df.mean())
+        df = df.fillna(0)  # Fill with 0 instead of mean for consistency
         
         # Get the input shape from metadata
         if metadata and 'input_shape' in metadata:
@@ -70,6 +80,12 @@ def preprocess_csv(csv_data):
         
         # Flatten all data into a single sequence
         data_flat = data.flatten()
+        
+        # Remove any NaN or inf values
+        data_flat = data_flat[np.isfinite(data_flat)]
+        
+        if len(data_flat) == 0:
+            raise ValueError("No valid numeric data found in CSV after cleaning.")
         
         # If we don't have enough data, pad with zeros
         if len(data_flat) < expected_timesteps:
