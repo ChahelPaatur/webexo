@@ -20,6 +20,8 @@ body { font-family: system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; 
 .input-group input { width: 100%; padding: 12px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #e0e0e0; font-size: 16px; }
 .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-guest { background: rgba(255, 255, 255, 0.1); margin-top: 15px; }
+.btn-guest:hover { background: rgba(255, 255, 255, 0.15); }
 .auth-toggle { text-align: center; margin-top: 20px; color: #888; }
 .auth-toggle a { color: #667eea; cursor: pointer; }
 .error-msg { color: #ff6b6b; font-size: 14px; margin-top: 10px; }
@@ -85,6 +87,7 @@ input[type="file"] { display: none; }
 <div class="error-msg" id="errorMsg"></div>
 </form>
 <div class="auth-toggle"><span id="authToggleText">Don't have an account?</span> <a id="authToggleLink">Sign Up</a></div>
+<button class="btn btn-guest" onclick="enterGuestMode()">Continue as Guest</button>
 </div>
 </div>
 
@@ -135,7 +138,7 @@ input[type="file"] { display: none; }
 <div class="modal-header"><h2>Model Configuration</h2><button class="close-btn" onclick="closeSettings()">×</button></div>
 <div class="setting-item"><label>Model Status</label><input type="text" value="NASA Exoplanet ML Model v1.0" disabled style="opacity: 0.7; width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e0e0e0;"></div>
 <div class="setting-item" style="margin-top: 20px;"><label>Dataset</label><input type="text" value="NASA Exoplanet Archive" disabled style="opacity: 0.7; width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e0e0e0;"></div>
-<div class="setting-item" style="margin-top: 20px;"><label>API Endpoint</label><input type="text" id="apiEndpoint" placeholder="Auto-detected (localhost or Vercel)" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e0e0e0;"></div>
+<div class="setting-item" style="margin-top: 20px;"><label>API Endpoint</label><input type="text" id="apiEndpoint" value="http://127.0.0.1:5001/api/predict" placeholder="API endpoint URL" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #e0e0e0;"></div>
 <button class="btn" onclick="closeSettings()" style="margin-top: 20px;">Close</button>
 </div>
 </div>
@@ -147,7 +150,7 @@ input[type="file"] { display: none; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-const ML_MODEL_API = 'apikey-production-b0ae.up.railway.app';
+const ML_MODEL_API = 'http://127.0.0.1:5001/api/predict';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCNev9ImmiExML048xan-nY9atb6rIcghE",
@@ -174,7 +177,7 @@ for(let i=0;i<200;i++){
   document.getElementById('stars').appendChild(s);
 }
 
-let isLogin=true, currentUser=null, lastPrediction=null;
+let isLogin=true, currentUser=null, lastPrediction=null, isGuestMode=false;
 
 document.getElementById('authToggleLink').addEventListener('click',function(){
   isLogin=!isLogin;
@@ -200,6 +203,7 @@ document.getElementById('authForm').addEventListener('submit',async function(e){
       await auth.createUserWithEmailAndPassword(email,password);
     }
     currentUser={email:email};
+    isGuestMode=false;
     document.getElementById('userEmail').textContent=email;
     document.getElementById('authScreen').style.display='none';
     document.getElementById('mainApp').classList.add('active');
@@ -210,9 +214,20 @@ document.getElementById('authForm').addEventListener('submit',async function(e){
   }
 });
 
+function enterGuestMode(){
+  isGuestMode=true;
+  currentUser={email:'Guest User'};
+  document.getElementById('userEmail').textContent='Guest User';
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('mainApp').classList.add('active');
+}
+
 function logout(){
-  auth.signOut();
+  if(!isGuestMode){
+    auth.signOut();
+  }
   currentUser=null;
+  isGuestMode=false;
   document.getElementById('authScreen').style.display='flex';
   document.getElementById('mainApp').classList.remove('active');
   document.getElementById('dataContainer').innerHTML='';
@@ -237,11 +252,7 @@ async function handleFileUpload(event){
   reader.onload=async function(e){
     const csvData=e.target.result;
     try{
-      // Auto-detect API endpoint: use Vercel if deployed, localhost if local
-      const defaultApiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://127.0.0.1:5001'
-        : '/api/predict';
-      const apiUrl = document.getElementById('apiEndpoint').value || defaultApiUrl;
+      const apiUrl = document.getElementById('apiEndpoint').value || ML_MODEL_API;
       const response=await fetch(apiUrl,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -256,17 +267,18 @@ async function handleFileUpload(event){
       lastPrediction=prediction;
       displayResults(prediction, file.name);
       
-      await db.collection('analyses').add({
-        userId:currentUser.email,
-        fileName:file.name,
-        prediction:prediction,
-        timestamp:firebase.firestore.FieldValue.serverTimestamp()
-      });
+      if(!isGuestMode){
+        await db.collection('analyses').add({
+          userId:currentUser.email,
+          fileName:file.name,
+          prediction:prediction,
+          timestamp:firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
       
       addToHistory('Analysis: '+file.name,new Date().toLocaleString());
     }catch(error){
-      const currentApiUrl = document.getElementById('apiEndpoint').value || 'http://127.0.0.1:5001';
-      container.innerHTML='<div class="data-card"><h3 style="color: #ff6b6b;">❌ Error</h3><p style="color: #888; margin-top: 12px;">'+error.message+'</p><p style="color: #666; margin-top: 8px; font-size: 14px;">Make sure your ML model server is running at: '+currentApiUrl+'</p><p style="color: #888; margin-top: 8px; font-size: 14px;">To start the server, run: <code style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;">python app.py</code></p></div>';
+      container.innerHTML='<div class="data-card"><h3 style="color: #ff6b6b;">❌ Error</h3><p style="color: #888; margin-top: 12px;">'+error.message+'</p><p style="color: #666; margin-top: 8px; font-size: 14px;">Make sure your ML model API is running at: '+apiUrl+'</p><p style="color: #888; margin-top: 8px; font-size: 14px;">To start the server, run: <code style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;">./start.sh</code></p></div>';
     }
   };
   reader.readAsText(file);
